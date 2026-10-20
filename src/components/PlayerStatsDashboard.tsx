@@ -222,60 +222,66 @@ export const PlayerStatsDashboard: React.FC<PlayerStatsDashboardProps> = ({
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="w-full">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-950/40">
-                <th className="py-3 px-4 font-medium">Player</th>
-                <th className="py-3 px-3 font-medium">Group & Role</th>
-                <th className="py-3 px-3 font-medium">Team</th>
-                <th className="py-3 px-3 font-medium text-right">Runs</th>
-                <th className="py-3 px-3 font-medium text-right">Balls</th>
-                <th className="py-3 px-3 font-medium text-right">4s / 6s</th>
-                <th className="py-3 px-3 font-medium text-right">SR</th>
-                <th className="py-3 px-3 font-medium text-right">Overs</th>
-                <th className="py-3 px-3 font-medium text-right">Wkts</th>
-                <th className="py-3 px-3 font-medium text-right">Econ</th>
-                <th className="py-3 px-4 font-medium text-right">MVP Pts</th>
+                <th className="py-3 px-3 sm:px-5 font-medium">Player & Squad</th>
+                <th className="py-3 px-2 sm:px-3 font-medium hidden md:table-cell">Group & Role</th>
+                <th className="py-3 px-2 sm:px-3 font-medium text-right">Runs (B)</th>
+                <th className="py-3 px-2 sm:px-3 font-medium text-right hidden sm:table-cell">4s / 6s</th>
+                <th className="py-3 px-2 sm:px-3 font-medium text-right">SR</th>
+                <th className="py-3 px-2 sm:px-3 font-medium text-right">Wkts (Ov)</th>
+                <th className="py-3 px-2 sm:px-3 font-medium text-right hidden sm:table-cell">Econ</th>
+                <th className="py-3 px-3 sm:px-5 font-medium text-right">MVP</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 text-sm">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 text-xs sm:text-sm">
               {filteredStats.map((st) => (
                 <tr
                   key={st.playerId}
                   className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
                 >
-                  <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
-                    {st.name}
+                  <td className="py-3 px-3 sm:px-5">
+                    <div className="font-bold text-slate-900 dark:text-white">
+                      {st.name}
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-1 mt-0.5">
+                      <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                        {st.teamShortName}
+                      </span>
+                      <span className="md:hidden">
+                        · {st.group === 'CAPTAIN' ? 'Capt' : `Grp ${st.group}`} · {st.role}
+                      </span>
+                    </div>
                   </td>
-                  <td className="py-3 px-3 text-xs text-slate-600 dark:text-slate-400">
+                  <td className="py-3 px-2 sm:px-3 text-xs text-slate-600 dark:text-slate-400 hidden md:table-cell">
                     {st.group === 'CAPTAIN' ? 'Captain' : `Group ${st.group}`} · {st.role}
                   </td>
-                  <td className="py-3 px-3 text-xs font-mono text-slate-700 dark:text-slate-300">
-                    {st.teamShortName}
+                  <td className="py-3 px-2 sm:px-3 text-right font-mono tabular-nums">
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {st.runs}
+                    </span>{' '}
+                    <span className="text-xs text-slate-500">({st.ballsFaced})</span>
                   </td>
-                  <td className="py-3 px-3 text-right font-mono tabular-nums font-bold text-slate-900 dark:text-white">
-                    {st.runs}
-                  </td>
-                  <td className="py-3 px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
-                    {st.ballsFaced}
-                  </td>
-                  <td className="py-3 px-3 text-right font-mono tabular-nums text-xs text-slate-600 dark:text-slate-400">
+                  <td className="py-3 px-2 sm:px-3 text-right font-mono tabular-nums text-xs text-slate-600 dark:text-slate-400 hidden sm:table-cell">
                     {st.fours} / {st.sixes}
                   </td>
-                  <td className="py-3 px-3 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
+                  <td className="py-3 px-2 sm:px-3 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
                     {st.strikeRate.toFixed(1)}
                   </td>
-                  <td className="py-3 px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
-                    {formatOvers(st.ballsBowled)}
+                  <td className="py-3 px-2 sm:px-3 text-right font-mono tabular-nums">
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                      {st.wickets}
+                    </span>{' '}
+                    <span className="text-xs text-slate-500">
+                      ({formatOvers(st.ballsBowled)})
+                    </span>
                   </td>
-                  <td className="py-3 px-3 text-right font-mono tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
-                    {st.wickets}
-                  </td>
-                  <td className="py-3 px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
+                  <td className="py-3 px-2 sm:px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400 hidden sm:table-cell">
                     {st.economy.toFixed(2)}
                   </td>
-                  <td className="py-3 px-4 text-right font-mono tabular-nums font-bold text-sky-600 dark:text-sky-400">
+                  <td className="py-3 px-3 sm:px-5 text-right font-mono tabular-nums font-bold text-sky-600 dark:text-sky-400">
                     {st.mvpPoints}
                   </td>
                 </tr>

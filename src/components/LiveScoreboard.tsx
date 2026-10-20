@@ -329,9 +329,9 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Match Selector & PDF Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+      {/* Match Selector & PDF Bar (Wraps cleanly with zero horizontal scroll) */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold text-slate-500 shrink-0">
             Select Match:
           </span>
@@ -367,7 +367,7 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
           })}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={openMatchSetup}
@@ -554,27 +554,27 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
               )}
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="w-full">
+              <table className="w-full text-left border-collapse table-fixed sm:table-auto">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
-                    <th className="py-2.5 px-5 font-medium">Batter on Crease</th>
-                    <th className="py-2.5 px-3 font-medium text-right">Runs</th>
-                    <th className="py-2.5 px-3 font-medium text-right">Balls</th>
-                    <th className="py-2.5 px-3 font-medium text-right">4s</th>
-                    <th className="py-2.5 px-3 font-medium text-right">6s</th>
-                    <th className="py-2.5 px-5 font-medium text-right">SR</th>
+                    <th className="py-2.5 px-3 sm:px-5 font-medium w-[46%] sm:w-auto">Batter on Crease</th>
+                    <th className="py-2.5 px-1.5 sm:px-3 font-medium text-right">R</th>
+                    <th className="py-2.5 px-1.5 sm:px-3 font-medium text-right">B</th>
+                    <th className="py-2.5 px-1.5 sm:px-3 font-medium text-right">4s</th>
+                    <th className="py-2.5 px-1.5 sm:px-3 font-medium text-right">6s</th>
+                    <th className="py-2.5 px-2.5 sm:px-5 font-medium text-right">SR</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 text-sm">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 text-xs sm:text-sm">
                   <tr>
-                    <td className="py-3 px-5">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <span className="font-bold text-slate-900 dark:text-white">
+                    <td className="py-3 px-3 sm:px-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                        <div className="min-w-0">
+                          <span className="font-bold text-slate-900 dark:text-white block sm:inline truncate">
                             {strikerPlayer?.name || 'Select Striker'} *
                           </span>
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 ml-2 font-medium">
+                          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 sm:ml-2 font-medium">
                             (On Strike)
                           </span>
                         </div>
@@ -588,7 +588,7 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
                                 strikerId: e.target.value,
                               })
                             }
-                            className="text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-slate-700 dark:text-slate-300"
+                            className="text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-700 dark:text-slate-300 max-w-full"
                           >
                             {battingSquad.map((p) => (
                               <option key={p.id} value={p.id}>
@@ -599,31 +599,31 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
                         )}
                       </div>
                     </td>
-                    <td className="py-3 px-3 text-right font-mono font-bold tabular-nums text-slate-900 dark:text-white">
+                    <td className="py-3 px-1.5 sm:px-3 text-right font-mono font-bold tabular-nums text-slate-900 dark:text-white">
                       {strikerStats.runs}
                     </td>
-                    <td className="py-3 px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
+                    <td className="py-3 px-1.5 sm:px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
                       {strikerStats.balls}
                     </td>
-                    <td className="py-3 px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
+                    <td className="py-3 px-1.5 sm:px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
                       {strikerStats.fours}
                     </td>
-                    <td className="py-3 px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
+                    <td className="py-3 px-1.5 sm:px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
                       {strikerStats.sixes}
                     </td>
-                    <td className="py-3 px-5 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
+                    <td className="py-3 px-2.5 sm:px-5 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
                       {strikerStats.sr}
                     </td>
                   </tr>
 
                   <tr>
-                    <td className="py-3 px-5">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <span className="font-medium text-slate-700 dark:text-slate-300">
+                    <td className="py-3 px-3 sm:px-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                        <div className="min-w-0">
+                          <span className="font-medium text-slate-700 dark:text-slate-300 block sm:inline truncate">
                             {nonStrikerPlayer?.name || 'Select Non-Striker'}
                           </span>
-                          <span className="text-xs text-slate-400 ml-2">
+                          <span className="text-[11px] text-slate-400 sm:ml-2">
                             (Non-Striker)
                           </span>
                         </div>
@@ -637,7 +637,7 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
                                 nonStrikerId: e.target.value,
                               })
                             }
-                            className="text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-slate-700 dark:text-slate-300"
+                            className="text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-700 dark:text-slate-300 max-w-full"
                           >
                             {battingSquad.map((p) => (
                               <option key={p.id} value={p.id}>
@@ -648,19 +648,19 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
                         )}
                       </div>
                     </td>
-                    <td className="py-3 px-3 text-right font-mono font-bold tabular-nums text-slate-900 dark:text-white">
+                    <td className="py-3 px-1.5 sm:px-3 text-right font-mono font-bold tabular-nums text-slate-900 dark:text-white">
                       {nonStrikerStats.runs}
                     </td>
-                    <td className="py-3 px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
+                    <td className="py-3 px-1.5 sm:px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
                       {nonStrikerStats.balls}
                     </td>
-                    <td className="py-3 px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
+                    <td className="py-3 px-1.5 sm:px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
                       {nonStrikerStats.fours}
                     </td>
-                    <td className="py-3 px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
+                    <td className="py-3 px-1.5 sm:px-3 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
                       {nonStrikerStats.sixes}
                     </td>
-                    <td className="py-3 px-5 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
+                    <td className="py-3 px-2.5 sm:px-5 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
                       {nonStrikerStats.sr}
                     </td>
                   </tr>

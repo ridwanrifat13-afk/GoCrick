@@ -388,16 +388,16 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
-      {/* Top Bar Contract: Zone 1 (1-line Brand Wordmark) | Zone 2 (4 Single-Line Nav Links) | Zone 3 (1 Primary CTA) */}
-      <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-8">
-        {/* Zone 1: Single text element wordmark */}
+      {/* Top Bar: Clean & Compact with Zero Horizontal Overflow */}
+      <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8 py-3 flex items-center justify-between gap-4">
+        {/* Zone 1: Brand Title (truncates cleanly on narrow screens) */}
         <a
           href="#top"
           onClick={(e) => {
             e.preventDefault();
             setActiveTab('DRAFT');
           }}
-          className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white whitespace-nowrap shrink-0 font-display"
+          className="text-sm sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white truncate min-w-0 font-display"
         >
           {state.title}
         </a>
@@ -405,7 +405,7 @@ export default function App() {
         {/* Zone 2: 4 concise single-line text navigation links */}
         <nav
           aria-label="Primary Views"
-          className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600 dark:text-slate-400"
+          className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-400 shrink-0"
         >
           {(
             [
@@ -430,15 +430,15 @@ export default function App() {
           ))}
         </nav>
 
-        {/* Zone 3: 1 primary action */}
+        {/* Zone 3: Quick User Guide Trigger */}
         <div className="flex items-center shrink-0">
           <button
             type="button"
-            onClick={() => setIsShareModalOpen(true)}
-            className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 shadow-xs"
+            onClick={() => setIsGuideModalOpen(true)}
+            className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
           >
-            <Share2 className="w-3.5 h-3.5" />
-            <span>Share Live Link</span>
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>User Guide</span>
           </button>
         </div>
       </header>
@@ -450,8 +450,8 @@ export default function App() {
           aria-label="Tournament Banner and Controls"
           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-5"
         >
-          {/* Left: Logo Placeholder Slot + Tournament Details */}
-          <div className="flex items-center gap-4 min-w-0">
+          {/* Left: Logo Placeholder Slot + Tournament Details + Share Link Button Below Title */}
+          <div className="flex items-start sm:items-center gap-4 min-w-0">
             <div className="relative group shrink-0">
               <input
                 ref={logoInputRef}
@@ -484,8 +484,8 @@ export default function App() {
               </button>
             </div>
 
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                 <span>OCTOBER 22, 2026</span>
                 <span aria-hidden="true">·</span>
                 <span>{state.venue}</span>
@@ -494,36 +494,40 @@ export default function App() {
                   {connectedViewers} ONLINE VIEWER{connectedViewers !== 1 ? 'S' : ''}
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white truncate mt-0.5">
+
+              <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-0.5 break-words">
                 {state.title}
               </h1>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                <span>24 Players · 3 Captains · 7 Performance Groups (A–G)</span>
-                <span aria-hidden="true">·</span>
+
+              {/* Share Live Link Button & Logo Action Directly Below Tournament Title */}
+              <div className="flex flex-wrap items-center gap-2.5 mt-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 shadow-xs"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Share Live Link</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => logoInputRef.current?.click()}
-                  className="text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 cursor-pointer font-medium"
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
                 >
-                  <Upload className="w-3 h-3" />
+                  <Upload className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>{state.logoDataUrl ? 'Change Logo' : 'Upload Logo'}</span>
                 </button>
+
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  24 Players · 3 Captains · Groups A–G
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Right: Easy-to-Understand Controls */}
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            {/* User Guide Button */}
-            <button
-              type="button"
-              onClick={() => setIsGuideModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-              <span>User Guide</span>
-            </button>
-
+          {/* Right: Easy-to-Understand Controls (Wraps cleanly without horizontal scroll) */}
+          <div className="flex flex-wrap items-center gap-2">
             {/* Organizer PIN Lock / Unlock */}
             <button
               type="button"

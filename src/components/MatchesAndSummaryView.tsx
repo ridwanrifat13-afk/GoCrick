@@ -158,50 +158,50 @@ export const MatchesAndSummaryView: React.FC<MatchesAndSummaryViewProps> = ({
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="w-full">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
-                  <th className="py-3 px-4 font-medium">#</th>
-                  <th className="py-3 px-3 font-medium">Team</th>
-                  <th className="py-3 px-2.5 font-medium text-right">P</th>
-                  <th className="py-3 px-2.5 font-medium text-right">W</th>
-                  <th className="py-3 px-2.5 font-medium text-right">L</th>
-                  <th className="py-3 px-2.5 font-medium text-right">PTS</th>
-                  <th className="py-3 px-4 font-medium text-right">NRR</th>
+                  <th className="py-3 px-2.5 sm:px-4 font-medium">#</th>
+                  <th className="py-3 px-2 sm:px-3 font-medium">Team</th>
+                  <th className="py-3 px-1.5 sm:px-2.5 font-medium text-right">P</th>
+                  <th className="py-3 px-1.5 sm:px-2.5 font-medium text-right">W</th>
+                  <th className="py-3 px-1.5 sm:px-2.5 font-medium text-right">L</th>
+                  <th className="py-3 px-1.5 sm:px-2.5 font-medium text-right">PTS</th>
+                  <th className="py-3 px-2.5 sm:px-4 font-medium text-right">NRR</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 text-sm">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 text-xs sm:text-sm">
                 {standings.map((row, idx) => (
                   <tr
                     key={row.teamId}
                     className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
                   >
-                    <td className="py-3.5 px-4 font-mono text-xs font-bold text-slate-500">
+                    <td className="py-3 px-2.5 sm:px-4 font-mono text-xs font-bold text-slate-500">
                       0{idx + 1}
                     </td>
-                    <td className="py-3.5 px-3">
-                      <div className="font-bold text-slate-900 dark:text-white">
+                    <td className="py-3 px-2 sm:px-3 min-w-0">
+                      <div className="font-bold text-slate-900 dark:text-white leading-snug">
                         {row.teamName}
                       </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        {idx < 2 ? 'Grand Final Qualifier Zone' : 'Elimination Zone'}
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {idx < 2 ? 'Final Qualifier' : 'Elimination'}
                       </div>
                     </td>
-                    <td className="py-3.5 px-2.5 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
+                    <td className="py-3 px-1.5 sm:px-2.5 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
                       {row.played}
                     </td>
-                    <td className="py-3.5 px-2.5 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400 font-semibold">
+                    <td className="py-3 px-1.5 sm:px-2.5 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400 font-semibold">
                       {row.won}
                     </td>
-                    <td className="py-3.5 px-2.5 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
+                    <td className="py-3 px-1.5 sm:px-2.5 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
                       {row.lost}
                     </td>
-                    <td className="py-3.5 px-2.5 text-right font-mono tabular-nums font-bold text-slate-900 dark:text-white">
+                    <td className="py-3 px-1.5 sm:px-2.5 text-right font-mono tabular-nums font-bold text-slate-900 dark:text-white">
                       {row.points}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono tabular-nums text-xs text-slate-700 dark:text-slate-300">
-                      {row.nrr >= 0 ? `+${row.nrr.toFixed(3)}` : row.nrr.toFixed(3)}
+                    <td className="py-3 px-2.5 sm:px-4 text-right font-mono tabular-nums text-xs text-slate-700 dark:text-slate-300">
+                      {row.nrr >= 0 ? `+${row.nrr.toFixed(2)}` : row.nrr.toFixed(2)}
                     </td>
                   </tr>
                 ))}
