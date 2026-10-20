@@ -1,0 +1,6 @@
+{
+  "name": "SGHS-23 Cricket Tournament Season 2",
+  "description": "Live group-by-group player draft studio, offline-resilient ball-by-ball scoreboard, player statistics dashboard, match summaries, and PDF archive generator for SGHS-23 Cricket Tournament Season 2.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
