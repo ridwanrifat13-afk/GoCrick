@@ -101,6 +101,15 @@ async function startServer() {
           savePersistedState(authoritativeState);
           broadcastState();
         } else if (
+          message.type === 'SYNC_FULL_STATE' &&
+          message.state &&
+          typeof message.state.version === 'number' &&
+          message.state.version > authoritativeState.version
+        ) {
+          authoritativeState = message.state as TournamentState;
+          savePersistedState(authoritativeState);
+          broadcastState();
+        } else if (
           message.type === 'START_DRAMATIC_SHUFFLE' &&
           message.group &&
           message.assignments

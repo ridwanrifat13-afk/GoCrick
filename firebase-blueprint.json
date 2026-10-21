@@ -1,0 +1,159 @@
+{
+  "entities": {
+    "TournamentDocument": {
+      "title": "TournamentDocument",
+      "description": "Persisted live state of the SGHS-23 Cricket Tournament Season 2 including teams, 24 players across Groups A-G, draft reveals, match scorecards, and tournament logo.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Official tournament title",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "season": {
+          "type": "string",
+          "description": "Tournament season label",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "date": {
+          "type": "string",
+          "description": "Tournament date string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "venue": {
+          "type": "string",
+          "description": "Tournament venue name",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "logoDataUrl": {
+          "type": "string",
+          "description": "Compressed data URL for custom tournament logo",
+          "minLength": 0,
+          "maxLength": 700000
+        },
+        "organizerPin": {
+          "type": "string",
+          "description": "PIN code for organizer controls",
+          "minLength": 4,
+          "maxLength": 12,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "version": {
+          "type": "integer",
+          "description": "Monotonically increasing state version number"
+        },
+        "activeMatchId": {
+          "type": "string",
+          "description": "ID of the currently active match in the scoreboard",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "activeDraftGroup": {
+          "type": "string",
+          "description": "Currently revealing draft group A-G or empty string when idle",
+          "minLength": 0,
+          "maxLength": 10
+        },
+        "players": {
+          "type": "array",
+          "description": "Bounded list of 24 tournament players (3 captains + 21 grouped players)"
+        },
+        "teams": {
+          "type": "array",
+          "description": "Bounded list of 3 competing tournament teams"
+        },
+        "draftGroups": {
+          "type": "object",
+          "description": "Map of draft reveal states for Groups A through G"
+        },
+        "matches": {
+          "type": "array",
+          "description": "Bounded list of 4 tournament matches (3 Round-Robin + 1 Grand Final)"
+        },
+        "notifications": {
+          "type": "array",
+          "description": "Bounded list of recent live tournament notifications"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the tournament organizer who created the document",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "status": {
+          "type": "string",
+          "description": "Lifecycle status of the tournament document",
+          "enum": ["active", "archived"],
+          "minLength": 6,
+          "maxLength": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the tournament document was initialized"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the tournament document was last updated"
+        }
+      },
+      "required": [
+        "title",
+        "season",
+        "date",
+        "venue",
+        "logoDataUrl",
+        "organizerPin",
+        "version",
+        "activeMatchId",
+        "activeDraftGroup",
+        "players",
+        "teams",
+        "draftGroups",
+        "matches",
+        "notifications",
+        "ownerId",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Trusted admin role assignment record keyed by user UID",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the administrator",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of admin record creation"
+        }
+      },
+      "required": ["uid", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/tournaments/{tournamentId}": {
+      "schema": "TournamentDocument",
+      "description": "Stores live tournament state documents keyed by tournamentId (e.g., sghs23_season2)"
+    },
+    "/admins/{adminId}": {
+      "schema": "AdminRecord",
+      "description": "Trusted administrator lookup collection"
+    }
+  }
+}

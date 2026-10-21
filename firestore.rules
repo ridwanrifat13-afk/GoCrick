@@ -1,0 +1,172 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'ridwanrifat13@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation Blueprint for AdminRecord (/admins/{adminId})
+    function isValidAdminRecord(data) {
+      return data.keys().hasAll(['uid', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'createdAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint for TournamentDocument (/tournaments/{tournamentId})
+    function isValidTournament(data) {
+      return data.keys().hasAll([
+        'title',
+        'season',
+        'date',
+        'venue',
+        'logoDataUrl',
+        'organizerPin',
+        'version',
+        'activeMatchId',
+        'activeDraftGroup',
+        'players',
+        'teams',
+        'draftGroups',
+        'matches',
+        'notifications',
+        'ownerId',
+        'status',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'title',
+        'season',
+        'date',
+        'venue',
+        'logoDataUrl',
+        'organizerPin',
+        'version',
+        'activeMatchId',
+        'activeDraftGroup',
+        'players',
+        'teams',
+        'draftGroups',
+        'matches',
+        'notifications',
+        'ownerId',
+        'status',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+      data.season is string && data.season.size() >= 1 && data.season.size() <= 60 &&
+      data.date is string && data.date.size() >= 1 && data.date.size() <= 40 &&
+      data.venue is string && data.venue.size() >= 1 && data.venue.size() <= 120 &&
+      data.logoDataUrl is string && data.logoDataUrl.size() <= 700000 &&
+      data.organizerPin is string && data.organizerPin.size() >= 4 && data.organizerPin.size() <= 12 && data.organizerPin.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.version is int && data.version >= 1 && data.version <= 10000000 &&
+      data.activeMatchId is string && data.activeMatchId.size() >= 1 && data.activeMatchId.size() <= 60 && data.activeMatchId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.activeDraftGroup is string && data.activeDraftGroup.size() <= 10 &&
+      data.players is list && data.players.size() >= 1 && data.players.size() <= 30 && data.players[0] is map &&
+      data.teams is list && data.teams.size() >= 1 && data.teams.size() <= 6 && data.teams[0] is map &&
+      data.draftGroups is map && data.draftGroups.keys().hasOnly(['A', 'B', 'C', 'D', 'E', 'F', 'G']) &&
+      data.matches is list && data.matches.size() >= 1 && data.matches.size() <= 10 && data.matches[0] is map &&
+      data.notifications is list && data.notifications.size() <= 60 && (data.notifications.size() == 0 || data.notifications[0] is map) &&
+      data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      (data.ownerId == request.auth.uid || isAdmin()) &&
+      data.status is string && data.status.size() >= 6 && data.status.size() <= 16 && data.status in ['active', 'archived'] &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // Collection: /admins/{adminId}
+    match /admins/{adminId} {
+      allow get: if isVerifiedUser() && isValidId(adminId) && (request.auth.uid == adminId || isAdmin());
+      allow list: if false;
+      allow create: if isVerifiedUser() && isValidId(adminId) && isValidAdminRecord(incoming()) && incoming().uid == adminId && incoming().createdAt == request.time && isAdmin();
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(adminId) && isAdmin();
+    }
+
+    // Collection: /tournaments/{tournamentId}
+    match /tournaments/{tournamentId} {
+      // Single-document get by known tournament ID so spectators with the shared link can view live state
+      allow get: if isValidId(tournamentId);
+      allow list: if false;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(tournamentId) &&
+        isValidTournament(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().status == 'active' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(tournamentId) &&
+        isValidTournament(incoming()) &&
+        (existing().status != 'archived' || isAdmin()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().updatedAt == request.time &&
+        (existing().ownerId == request.auth.uid || isAdmin()) &&
+        (
+          isAdmin() ||
+          // Action 1: Live Tournament State Sync (Draft, Rosters, Scoreboard, Metadata)
+          (
+            incoming().version >= existing().version &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'title',
+              'season',
+              'date',
+              'venue',
+              'logoDataUrl',
+              'organizerPin',
+              'version',
+              'activeMatchId',
+              'activeDraftGroup',
+              'players',
+              'teams',
+              'draftGroups',
+              'matches',
+              'notifications',
+              'updatedAt'
+            ])
+          ) ||
+          // Action 2: Archive Tournament
+          (
+            incoming().status == 'archived' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isVerifiedUser() && isValidId(tournamentId) && isAdmin();
+    }
+  }
+}
