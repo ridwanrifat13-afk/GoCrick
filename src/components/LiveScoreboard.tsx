@@ -740,7 +740,7 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
                   className="px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                 >
                   <Lock className="w-3.5 h-3.5" />
-                  <span>Unlock PIN (2323) to Score</span>
+                  <span>Unlock Organizer to Score</span>
                 </button>
               )}
             </div>

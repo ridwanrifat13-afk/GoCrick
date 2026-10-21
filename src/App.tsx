@@ -49,10 +49,11 @@ import {
   signOutOrganizer,
 } from './firebase';
 
-const LOCAL_STATE_KEY = 'sghs23_season2_state_v1';
-const LOCAL_QUEUE_KEY = 'sghs23_season2_offline_queue_v1';
+const LOCAL_STATE_KEY = 'sghs23_season2_state_clean_v1';
+const LOCAL_QUEUE_KEY = 'sghs23_season2_offline_queue_clean_v1';
 const LOCAL_THEME_KEY = 'sghs23_season2_theme_v1';
-const LOCAL_ORG_UNLOCKED_KEY = 'sghs23_season2_organizer_v1';
+const LOCAL_ORG_UNLOCKED_KEY = 'sghs23_season2_organizer_v2';
+const ORGANIZER_SECRET_HASH = '10590';
 
 type ActiveTab = 'DRAFT' | 'SCOREBOARD' | 'MATCHES' | 'STATS';
 
@@ -199,7 +200,6 @@ export default function App() {
             snapshot.data() as Record<string, unknown>
           );
           setState((currentLocalState) => {
-            // If organizer has newer local changes than Firestore, push local changes to Firestore
             if (currentLocalState.version > cloudState.version) {
               if (auth.currentUser && !simulatedOfflineRef.current) {
                 saveTournamentStateToFirestore(currentLocalState).catch(() => {});
@@ -213,7 +213,6 @@ export default function App() {
             return merged;
           });
         } else if (auth.currentUser && !simulatedOfflineRef.current) {
-          // Initialize Firestore document with current local state when organizer signs in
           saveTournamentStateToFirestore(stateRef.current).catch(() => {});
         }
       },
@@ -269,7 +268,6 @@ export default function App() {
   const flushOfflineQueue = useCallback(async (queueToFlush: TournamentAction[]) => {
     if (queueToFlush.length === 0 || simulatedOfflineRef.current) return;
 
-    // 1. If signed in to Firebase, persist the latest state directly to Firestore
     if (auth.currentUser) {
       try {
         setCloudSyncing(true);
@@ -281,7 +279,6 @@ export default function App() {
       }
     }
 
-    // 2. Also sync with local Express server if available
     try {
       const res = await fetch('/api/tournament/sync-batch', {
         method: 'POST',
@@ -433,7 +430,6 @@ export default function App() {
 
       const canSyncOnline = isOnline && !simulatedOfflineRef.current;
 
-      // 1. Save to Firebase Firestore if organizer is signed in with Google
       if (canSyncOnline && auth.currentUser) {
         setCloudSyncing(true);
         saveTournamentStateToFirestore(nextState)
@@ -441,7 +437,6 @@ export default function App() {
           .catch(() => setCloudSyncing(false));
       }
 
-      // 2. Also broadcast over WebSocket if connected
       if (canSyncOnline && wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(
           JSON.stringify({
@@ -473,8 +468,6 @@ export default function App() {
         'team-3': shuffled[2].id,
       };
 
-      // Dispatch each reveal step through handleDispatchAction so both Firebase Firestore
-      // (on Vercel) and WebSocket spectators see the live card-by-card reveal!
       handleDispatchAction('START_GROUP_SHUFFLE', { group, assignments });
       setTimeout(() => {
         handleDispatchAction('ADVANCE_GROUP_REVEAL', { group, step: 1 });
@@ -489,7 +482,19 @@ export default function App() {
     [handleDispatchAction]
   );
 
+  const handleLogoButtonClick = () => {
+    if (!isOrganizer) {
+      setIsPinModalOpen(true);
+      return;
+    }
+    logoInputRef.current?.click();
+  };
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isOrganizer) {
+      setIsPinModalOpen(true);
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
     try {
@@ -506,10 +511,6 @@ export default function App() {
     setAuthError('');
     try {
       await signInOrganizerWithGoogle();
-      setIsOrganizer(true);
-      localStorage.setItem(LOCAL_ORG_UNLOCKED_KEY, 'true');
-      setIsPinModalOpen(false);
-      // Immediately upload current state to Firestore
       setCloudSyncing(true);
       await saveTournamentStateToFirestore(stateRef.current);
       setPendingActions([]);
@@ -524,7 +525,7 @@ export default function App() {
 
   const handleUnlockPinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput.trim() === state.organizerPin || pinInput.trim() === '2323') {
+    if (pinInput.trim() === ORGANIZER_SECRET_HASH) {
       setIsOrganizer(true);
       localStorage.setItem(LOCAL_ORG_UNLOCKED_KEY, 'true');
       setIsPinModalOpen(false);
@@ -534,7 +535,7 @@ export default function App() {
         saveTournamentStateToFirestore(stateRef.current).catch(() => {});
       }
     } else {
-      setPinError('Incorrect PIN. Default tournament organizer PIN is 2323.');
+      setPinError('Incorrect organizer password. Please try again.');
     }
   };
 
@@ -628,7 +629,7 @@ export default function App() {
               />
               <button
                 type="button"
-                onClick={() => logoInputRef.current?.click()}
+                onClick={handleLogoButtonClick}
                 title="Click to upload your tournament logo"
                 className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 flex flex-col items-center justify-center overflow-hidden transition-colors cursor-pointer"
               >
@@ -678,7 +679,7 @@ export default function App() {
 
                 <button
                   type="button"
-                  onClick={() => logoInputRef.current?.click()}
+                  onClick={handleLogoButtonClick}
                   className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
                 >
                   <Upload className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -694,35 +695,36 @@ export default function App() {
 
           {/* Right: Easy-to-Understand Controls (Wraps cleanly without horizontal scroll) */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Firebase Google Cloud Persistence Button */}
-            {authUser ? (
-              <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
-                <Cloud className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate max-w-[140px]">
-                  {cloudSyncing ? 'Saving to Cloud...' : 'Cloud Saved'}
-                </span>
+            {/* Firebase Google Cloud Persistence Button (Available in Organizer Mode) */}
+            {isOrganizer &&
+              (authUser ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
+                  <Cloud className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate max-w-[140px]">
+                    {cloudSyncing ? 'Saving to Cloud...' : 'Cloud Saved'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => signOutOrganizer()}
+                    title={`Signed in as ${authUser.email || 'Organizer'} — Click to sign out`}
+                    className="ml-1 p-0.5 rounded hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
                 <button
                   type="button"
-                  onClick={() => signOutOrganizer()}
-                  title={`Signed in as ${authUser.email || 'Organizer'} — Click to sign out`}
-                  className="ml-1 p-0.5 rounded hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 cursor-pointer"
+                  onClick={handleGoogleSignIn}
+                  className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 shadow-xs"
+                  title="Sign in with Google so all edited names, logos, shuffles, and scores save permanently to Firebase Cloud"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <Cloud className="w-3.5 h-3.5" />
+                  <span>Sign In to Save to Cloud</span>
                 </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 shadow-xs"
-                title="Sign in with Google so all edited names, logos, shuffles, and scores save permanently to Firebase Cloud"
-              >
-                <Cloud className="w-3.5 h-3.5" />
-                <span>Sign In to Save to Cloud</span>
-              </button>
-            )}
+              ))}
 
-            {/* Organizer PIN Lock / Unlock */}
+            {/* Organizer Password Lock / Unlock */}
             <button
               type="button"
               onClick={() => {
@@ -742,12 +744,12 @@ export default function App() {
               {isOrganizer ? (
                 <>
                   <Unlock className="w-3.5 h-3.5" />
-                  <span>Organizer Mode: ON</span>
+                  <span>Organizer Mode: ON (Lock)</span>
                 </>
               ) : (
                 <>
                   <Lock className="w-3.5 h-3.5" />
-                  <span>Unlock Organizer (PIN: 2323)</span>
+                  <span>Unlock Organizer</span>
                 </>
               )}
             </button>
@@ -965,10 +967,9 @@ export default function App() {
                 <p>
                   Anyone who opens your <strong>Share Live Link</strong> joins as a{' '}
                   <strong>Spectator</strong> (read-only) and automatically receives live updates
-                  from Firebase Firestore. As the organizer, click{' '}
-                  <strong>Sign In to Save to Cloud</strong> (or unlock with PIN{' '}
-                  <code className="font-mono font-bold text-emerald-500">2323</code>) so all your
-                  edited names, logos, shuffles, and scores are permanently saved in Firebase!
+                  from Firebase Firestore. As the tournament organizer, click{' '}
+                  <strong>Unlock Organizer</strong> and enter the organizer password to unlock
+                  group shuffling, roster editing, and live scoring.
                 </p>
               </div>
 
@@ -1080,25 +1081,21 @@ export default function App() {
                 Organizer Controls Protection
               </div>
               <div>
-                Spectators view in read-only mode by default. Sign in with Google or use Organizer
-                PIN{' '}
-                <strong className="font-mono text-emerald-600 dark:text-emerald-400">
-                  {state.organizerPin}
-                </strong>{' '}
-                on your device to unlock group shuffling and live scoring.
+                Spectators view in read-only mode by default. Only the tournament organizer can
+                unlock Organizer Mode with the private password to shuffle groups and score matches.
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Organizer PIN & Google Cloud Sign-In Modal */}
+      {/* Organizer Password Unlock Modal */}
       {isPinModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                Unlock Organizer Controls
+                Unlock Organizer Mode
               </h3>
               <button
                 type="button"
@@ -1113,49 +1110,20 @@ export default function App() {
               </button>
             </div>
 
-            {/* Recommended: Google Sign-In for Firebase Cloud Sync */}
-            <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 space-y-2.5">
-              <div className="text-xs text-slate-700 dark:text-slate-300">
-                <strong className="text-slate-900 dark:text-white block mb-0.5">
-                  Recommended: Unlock & Enable Cloud Save
-                </strong>
-                Sign in with Google so your customized player names, logo, shuffles, and scores are
-                permanently saved in Firebase Firestore.
-              </div>
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Cloud className="w-4 h-4" />
-                <span>Sign In with Google & Unlock</span>
-              </button>
-              {authError && (
-                <p className="text-xs text-rose-500">{authError}</p>
-              )}
-            </div>
-
-            <div className="relative flex py-1 items-center">
-              <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
-              <span className="shrink-0 mx-3 text-[11px] uppercase tracking-wider text-slate-400">
-                Or unlock with PIN
-              </span>
-              <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
-            </div>
-
             <form onSubmit={handleUnlockPinSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                  Enter Organizer PIN (Default: <span className="font-mono font-bold">2323</span>)
+                  Enter Organizer Password
                 </label>
                 <input
                   type="password"
+                  autoFocus
                   value={pinInput}
                   onChange={(e) => {
                     setPinInput(e.target.value);
                     setPinError('');
                   }}
-                  placeholder="Enter PIN (2323)"
+                  placeholder="Enter password"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-center font-mono text-lg tracking-widest text-slate-900 dark:text-white"
                 />
                 {pinError && (
@@ -1167,11 +1135,12 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    setPinInput('2323');
+                    setIsPinModalOpen(false);
+                    setPinError('');
                   }}
-                  className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-mono text-slate-600 dark:text-slate-300 cursor-pointer"
+                  className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer"
                 >
-                  Auto-Fill 2323
+                  Cancel
                 </button>
                 <button
                   type="submit"

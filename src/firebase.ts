@@ -27,7 +27,7 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
 export const TOURNAMENT_DOC_COLLECTION = 'tournaments';
-export const TOURNAMENT_DOC_ID = 'sghs23_season2';
+export const TOURNAMENT_DOC_ID = 'sghs23_season2_clean';
 
 export enum OperationType {
   CREATE = 'create',
@@ -121,8 +121,7 @@ function buildValidatedTournamentPayload(state: TournamentState) {
   const cleanDate = (state.date || '2026-10-22').slice(0, 40);
   const cleanVenue = (state.venue || 'SGHS Central Cricket Ground').slice(0, 120);
   const cleanLogo = (state.logoDataUrl || '').slice(0, 700000);
-  const cleanPin =
-    (state.organizerPin || '2323').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 12) || '2323';
+  const cleanPin = 'PROTECTED';
   const cleanVersion = Math.max(1, Math.min(10000000, Math.floor(state.version || 1)));
   const cleanActiveMatchId =
     (state.activeMatchId || 'match-1').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60) || 'match-1';

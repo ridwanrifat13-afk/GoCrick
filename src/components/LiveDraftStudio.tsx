@@ -298,7 +298,7 @@ export const LiveDraftStudio: React.FC<LiveDraftStudioProps> = ({
               className="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1.5 font-semibold cursor-pointer whitespace-nowrap shrink-0"
             >
               <Lock className="w-3.5 h-3.5" />
-              <span>Spectator Mode · Click to Enter Organizer PIN (2323) to Shuffle</span>
+              <span>Spectator Mode · Click to Unlock Organizer Mode to Shuffle</span>
             </button>
           )}
         </div>
