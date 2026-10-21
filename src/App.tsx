@@ -165,6 +165,10 @@ export default function App() {
   const lastTopNotificationIdRef = useRef<string | null>(
     state.notifications[0]?.id || null
   );
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const soundEnabledRef = useRef<boolean>(soundEnabled);
+  soundEnabledRef.current = soundEnabled;
+
   const stateRef = useRef<TournamentState>(state);
   stateRef.current = state;
 
@@ -173,6 +177,18 @@ export default function App() {
 
   const simulatedOfflineRef = useRef<boolean>(simulatedOfflineMode);
   simulatedOfflineRef.current = simulatedOfflineMode;
+
+  const triggerToast = useCallback((notification: TournamentNotification) => {
+    lastTopNotificationIdRef.current = notification.id;
+    setActiveToast(notification);
+    playTournamentSound(notification.type, soundEnabledRef.current);
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    toastTimerRef.current = setTimeout(() => {
+      setActiveToast((curr) => (curr?.id === notification.id ? null : curr));
+    }, 5200);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -256,15 +272,17 @@ export default function App() {
   useEffect(() => {
     const latest = state.notifications[0];
     if (latest && latest.id !== lastTopNotificationIdRef.current) {
-      lastTopNotificationIdRef.current = latest.id;
-      setActiveToast(latest);
-      playTournamentSound(latest.type, soundEnabled);
-      const timer = setTimeout(() => {
-        setActiveToast((curr) => (curr?.id === latest.id ? null : curr));
-      }, 4800);
-      return () => clearTimeout(timer);
+      triggerToast(latest);
     }
-  }, [state.notifications, soundEnabled]);
+  }, [state.notifications, triggerToast]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   const flushOfflineQueue = useCallback(async (queueToFlush: TournamentAction[]) => {
     if (queueToFlush.length === 0 || simulatedOfflineRef.current) return;
@@ -425,9 +443,15 @@ export default function App() {
         payload: payload as never,
       };
 
+      const prevTopId = stateRef.current.notifications[0]?.id;
       const nextState = applyTournamentAction(stateRef.current, action);
       stateRef.current = nextState;
       setState(nextState);
+
+      const nextTop = nextState.notifications[0];
+      if (nextTop && nextTop.id !== prevTopId) {
+        triggerToast(nextTop);
+      }
 
       const canSyncOnline = isOnline && !simulatedOfflineRef.current;
 
@@ -449,7 +473,7 @@ export default function App() {
         setPendingActions((prev) => [...prev, action]);
       }
     },
-    [isOnline]
+    [isOnline, triggerToast]
   );
 
   const handleTriggerDramaticGroupShuffle = useCallback(
@@ -948,26 +972,26 @@ export default function App() {
 
       {/* Built-in Interactive User Guide Modal */}
       {isGuideModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full max-h-[88vh] flex flex-col shadow-2xl">
-            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <HelpCircle className="w-5 h-5 text-emerald-500" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full max-h-[90dvh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <HelpCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white break-words">
                   SGHS-23 Season 2 — Step-by-Step User Guide
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsGuideModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5">
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5">
                 <div className="font-bold text-slate-900 dark:text-white">
                   1. Unlocking Organizer Mode & Saving to Firebase Cloud
                 </div>
@@ -980,7 +1004,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5">
                 <div className="font-bold text-slate-900 dark:text-white">
                   2. Customizing Captains, Players & Groups (Tab 1: Team Shuffle)
                 </div>
@@ -993,7 +1017,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5">
                 <div className="font-bold text-slate-900 dark:text-white">
                   3. Running the Live Group-by-Group Shuffle
                 </div>
@@ -1007,7 +1031,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5">
                 <div className="font-bold text-slate-900 dark:text-white">
                   4. Scoring Matches Ball-by-Ball (Tab 2: Live Scoreboard)
                 </div>
@@ -1021,11 +1045,11 @@ export default function App() {
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+            <div className="p-3.5 sm:p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
               <button
                 type="button"
                 onClick={() => setIsGuideModalOpen(false)}
-                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer"
               >
                 Got It, Close Guide
               </button>
@@ -1036,16 +1060,16 @@ export default function App() {
 
       {/* Shareable Live Session Link Modal */}
       {isShareModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto p-4 sm:p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white break-words">
                 Share Live Draft & Scoreboard Link
               </h3>
               <button
                 type="button"
                 onClick={() => setIsShareModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1057,17 +1081,17 @@ export default function App() {
               in real time via Firebase Cloud Sync.
             </p>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
                 type="text"
                 readOnly
                 value={shareableUrl}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-800 dark:text-slate-200"
+                className="w-full min-w-0 px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-800 dark:text-slate-200"
               />
               <button
                 type="button"
                 onClick={handleCopyShareLink}
-                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0"
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
               >
                 {copiedLink ? (
                   <>
@@ -1098,8 +1122,8 @@ export default function App() {
 
       {/* Organizer Password Unlock Modal */}
       {isPinModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full max-h-[90dvh] overflow-y-auto p-4 sm:p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 Unlock Organizer Mode
@@ -1111,7 +1135,7 @@ export default function App() {
                   setPinError('');
                   setAuthError('');
                 }}
-                className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1145,7 +1169,7 @@ export default function App() {
                     setIsPinModalOpen(false);
                     setPinError('');
                   }}
-                  className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer"
                 >
                   Cancel
                 </button>

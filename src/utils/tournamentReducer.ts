@@ -644,37 +644,7 @@ export function applyTournamentAction(
       let notifications = nextState.notifications;
       const scoreStr = `${batTeam?.shortName || 'Team'} ${updatedInn.runs}/${updatedInn.wickets} (${formatOvers(updatedInn.legalBalls)} ov)`;
 
-      if (isWicket) {
-        const outPlayerName =
-          nextState.players.find((p) => p.id === (dismissedPlayerId || inn.strikerId))?.name ||
-          striker?.name ||
-          'Batter';
-        notifications = pushNotification(notifications, {
-          type: 'WICKET',
-          title: `WICKET! ${bowler?.name || 'Bowler'} dismisses ${outPlayerName} (${wicketType || 'Out'})`,
-          message: `${ballEvent.commentary} · ${scoreStr}`,
-          timestamp: action.timestamp,
-          matchId,
-        });
-      } else if (runsOffBat === 6) {
-        notifications = pushNotification(notifications, {
-          type: 'SIX',
-          title: `SIX! ${striker?.name || 'Batter'} launches a maximum!`,
-          message: `${ballEvent.commentary} · ${scoreStr}`,
-          timestamp: action.timestamp,
-          matchId,
-        });
-      } else if (runsOffBat === 4) {
-        notifications = pushNotification(notifications, {
-          type: 'FOUR',
-          title: `FOUR! Boundary by ${striker?.name || 'Batter'}`,
-          message: `${ballEvent.commentary} · ${scoreStr}`,
-          timestamp: action.timestamp,
-          matchId,
-        });
-      }
-
-      // Check batter 30+ / 50+ milestone
+      // Check batter 30+ / 50+ milestone first
       const prevBatterRuns = inn.ballLog
         .filter((b) => b.strikerId === inn.strikerId)
         .reduce((acc, b) => acc + b.runsOffBat, 0);
@@ -703,10 +673,43 @@ export function applyTournamentAction(
         [innKey]: updatedInn,
       };
 
-      const { updatedMatch, notifications: finalNotifications } = finalizeMatchIfCompleted(
+      const { updatedMatch, notifications: afterMatchNotifications } = finalizeMatchIfCompleted(
         draftMatch,
         { ...nextState, notifications }
       );
+
+      let finalNotifications = afterMatchNotifications;
+
+      // Push WICKET, SIX, or FOUR last so it is ALWAYS at finalNotifications[0]
+      if (isWicket) {
+        const outPlayerName =
+          nextState.players.find((p) => p.id === (dismissedPlayerId || inn.strikerId))?.name ||
+          striker?.name ||
+          'Batter';
+        finalNotifications = pushNotification(finalNotifications, {
+          type: 'WICKET',
+          title: `WICKET! ${bowler?.name || 'Bowler'} dismisses ${outPlayerName} (${wicketType || 'Out'})`,
+          message: `${ballEvent.commentary} · ${scoreStr}`,
+          timestamp: action.timestamp,
+          matchId,
+        });
+      } else if (runsOffBat === 6 || (extraType !== 'NONE' && totalRuns >= 6)) {
+        finalNotifications = pushNotification(finalNotifications, {
+          type: 'SIX',
+          title: `SIX! ${striker?.name || 'Batter'} launches a maximum!`,
+          message: `${ballEvent.commentary} · ${scoreStr}`,
+          timestamp: action.timestamp,
+          matchId,
+        });
+      } else if (runsOffBat === 4 || (extraType !== 'NONE' && totalRuns === 4)) {
+        finalNotifications = pushNotification(finalNotifications, {
+          type: 'FOUR',
+          title: `FOUR! Boundary by ${striker?.name || 'Batter'}`,
+          message: `${ballEvent.commentary} · ${scoreStr}`,
+          timestamp: action.timestamp,
+          matchId,
+        });
+      }
 
       return {
         ...nextState,

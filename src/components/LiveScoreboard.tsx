@@ -1048,16 +1048,16 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
 
       {/* Wicket Detail Modal */}
       {isWicketModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto p-4 sm:p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-lg font-bold text-rose-600 dark:text-rose-400">
+              <h3 className="text-base sm:text-lg font-bold text-rose-600 dark:text-rose-400">
                 Record Wicket (OUT)
               </h3>
               <button
                 type="button"
                 onClick={() => setIsWicketModalOpen(false)}
-                className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1065,10 +1065,10 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
 
             <form onSubmit={handleConfirmWicket} className="space-y-4 mt-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
                   1. How did the batter get out?
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {WICKET_TYPES.map((wt) => (
                     <button
                       key={wt}
@@ -1119,7 +1119,7 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
                     type="text"
                     value={fielderName}
                     onChange={(e) => setFielderName(e.target.value)}
-                    placeholder="e.g. Tanvir Ahmed"
+                    placeholder="Enter fielder or keeper name"
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-white"
                   />
                 </div>
@@ -1165,16 +1165,16 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
 
       {/* Match & Overs Setup Modal */}
       {isMatchSetupOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto p-4 sm:p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                 Set Match Overs & Toss
               </h3>
               <button
                 type="button"
                 onClick={() => setIsMatchSetupOpen(false)}
-                className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1195,7 +1195,7 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
                     Who Won the Toss?
@@ -1255,12 +1255,21 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
 
       {/* Start 2nd Innings Modal */}
       {isSecondInningsModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Start 2nd Innings Run Chase
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto p-4 sm:p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                Start 2nd Innings Run Chase
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsSecondInningsModalOpen(false)}
+                className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
               Target to win: <strong>{activeMatch.innings1.runs + 1} runs</strong> in{' '}
               {activeMatch.oversLimit} overs.
             </p>

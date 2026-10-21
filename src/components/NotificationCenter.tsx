@@ -85,24 +85,27 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   onToggleSound,
   onClearAll,
 }) => {
+  // StadiumCelebrationOverlay renders the primary broadcast pop-up for SIX, FOUR, WICKET, DRAFT, MILESTONE, MATCH_RESULT.
+  // Only render the bottom info toast for general INFO notifications so mobile screens never have duplicate pop-ups.
+  const showInfoToast = activeToast && activeToast.type === 'INFO';
+
   return (
     <>
-      {/* Live Floating Toast Alert for Key Match & Draft Updates */}
-      {activeToast && (
+      {showInfoToast && (
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-5 right-5 z-50 max-w-sm w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-2xl transition-all"
+          className="fixed bottom-4 inset-x-3 sm:left-auto sm:right-5 z-50 sm:max-w-sm sm:w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-2xl transition-all"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1 min-w-0">
               <div className="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
                 {getCategoryStyle(activeToast.type).label}
               </div>
-              <div className="text-sm font-bold text-slate-900 dark:text-white">
+              <div className="text-sm font-bold text-slate-900 dark:text-white break-words">
                 {activeToast.title}
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words">
                 {activeToast.message}
               </p>
             </div>
@@ -119,17 +122,17 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
       {/* Slide-Over Notification Feed Drawer */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-end">
-          <div className="bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 w-full max-w-md h-full flex flex-col shadow-2xl">
-            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bell className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Live Match & Draft Notifications
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end">
+          <div className="bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 w-full sm:max-w-md h-dvh flex flex-col shadow-2xl">
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Bell className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
+                  Live Match & Draft Updates
                 </h3>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={onToggleSound}
@@ -162,7 +165,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
             <div className="divide-y divide-slate-100 dark:divide-slate-800 overflow-y-auto flex-1">
               {notifications.length === 0 ? (
-                <div className="p-10 text-center text-xs text-slate-500 dark:text-slate-400">
+                <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400">
                   No match or draft notifications yet. Events like wickets, sixes, fours, and
                   group draft reveals appear here in real time.
                 </div>
@@ -182,10 +185,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                         <div className="text-[11px] font-mono text-slate-400">
                           {st.label}
                         </div>
-                        <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                        <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5 break-words">
                           {item.title}
                         </div>
-                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed break-words">
                           {item.message}
                         </p>
                       </div>
