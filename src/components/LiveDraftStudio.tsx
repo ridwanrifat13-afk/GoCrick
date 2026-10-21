@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import {
   Shuffle,
   FileDown,
@@ -366,11 +367,14 @@ export const LiveDraftStudio: React.FC<LiveDraftStudioProps> = ({
               );
 
               return (
-                <div
-                  key={team.id}
-                  className={`rounded-xl p-5 border transition-all duration-300 ${
+                <motion.div
+                  key={`${activeRevealGroup.group}-${team.id}-${isRevealed ? 'revealed' : 'waiting'}`}
+                  initial={isRevealed ? { scale: 0.85, rotateY: 90, opacity: 0 } : false}
+                  animate={{ scale: 1, rotateY: 0, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                  className={`rounded-xl p-5 border-2 transition-colors duration-300 ${
                     isRevealed
-                      ? 'bg-emerald-50/60 dark:bg-slate-800/90 border-emerald-500/60 translate-y-0 opacity-100'
+                      ? 'bg-emerald-50/70 dark:bg-slate-800/95 border-emerald-500 shadow-lg shadow-emerald-500/15'
                       : 'bg-slate-50 dark:bg-slate-950/80 border-slate-200 dark:border-slate-800 opacity-85'
                   }`}
                 >
@@ -385,10 +389,11 @@ export const LiveDraftStudio: React.FC<LiveDraftStudioProps> = ({
 
                   {isRevealed && assignedPlayer ? (
                     <div className="py-3 space-y-1.5">
-                      <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                        JOINS {team.name.toUpperCase()}
+                      <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>JOINS {team.name.toUpperCase()}</span>
                       </div>
-                      <div className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                      <div className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                         {assignedPlayer.name}
                       </div>
                       <div className="text-xs text-slate-600 dark:text-slate-300">
@@ -408,7 +413,7 @@ export const LiveDraftStudio: React.FC<LiveDraftStudioProps> = ({
                       </div>
                     </div>
                   )}
-                </div>
+                </motion.div>
               );
             })}
           </div>

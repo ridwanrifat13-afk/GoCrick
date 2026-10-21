@@ -273,12 +273,26 @@ export function applyTournamentAction(
       const revealedTeam = nextState.teams.find((t) => t.id === targetTeamId);
 
       if (revealedPlayer && revealedTeam) {
-        notifications = pushNotification(notifications, {
-          type: 'DRAFT',
-          title: `Group ${group} Pick · ${revealedPlayer.name}`,
-          message: `${revealedPlayer.name} (${revealedPlayer.role}) drafted to ${revealedTeam.name}!`,
-          timestamp: action.timestamp,
-        });
+        if (step === 3) {
+          const summaryParts = teamOrder.map((tId) => {
+            const tObj = nextState.teams.find((t) => t.id === tId);
+            const pObj = updatedPlayers.find((p) => p.id === groupState.assignments[tId]);
+            return `${tObj?.name || tId}: ${pObj?.name || 'Player'}`;
+          });
+          notifications = pushNotification(notifications, {
+            type: 'DRAFT',
+            title: `Group ${group} Shuffle Complete!`,
+            message: summaryParts.join(' · '),
+            timestamp: action.timestamp,
+          });
+        } else {
+          notifications = pushNotification(notifications, {
+            type: 'DRAFT',
+            title: `Group ${group} Pick · ${revealedPlayer.name}`,
+            message: `${revealedPlayer.name} (${revealedPlayer.role}) drafted to ${revealedTeam.name}!`,
+            timestamp: action.timestamp,
+          });
+        }
       }
 
       return {
@@ -322,6 +336,21 @@ export function applyTournamentAction(
         },
       };
 
+      let notifications = nextState.notifications;
+      if (groupState.status !== 'completed') {
+        const summaryParts = teamOrder.map((tId) => {
+          const tObj = nextState.teams.find((t) => t.id === tId);
+          const pObj = updatedPlayers.find((p) => p.id === groupState.assignments[tId]);
+          return `${tObj?.name || tId}: ${pObj?.name || 'Player'}`;
+        });
+        notifications = pushNotification(notifications, {
+          type: 'DRAFT',
+          title: `Group ${group} Shuffle Complete!`,
+          message: summaryParts.join(' · '),
+          timestamp: action.timestamp,
+        });
+      }
+
       return {
         ...nextState,
         players: updatedPlayers,
@@ -332,6 +361,7 @@ export function applyTournamentAction(
           groups: updatedGroups,
           lastUpdated: action.timestamp,
         },
+        notifications,
       };
     }
 
@@ -615,9 +645,13 @@ export function applyTournamentAction(
       const scoreStr = `${batTeam?.shortName || 'Team'} ${updatedInn.runs}/${updatedInn.wickets} (${formatOvers(updatedInn.legalBalls)} ov)`;
 
       if (isWicket) {
+        const outPlayerName =
+          nextState.players.find((p) => p.id === (dismissedPlayerId || inn.strikerId))?.name ||
+          striker?.name ||
+          'Batter';
         notifications = pushNotification(notifications, {
           type: 'WICKET',
-          title: `WICKET! ${striker?.name || 'Batter'} (${wicketType || 'Out'})`,
+          title: `WICKET! ${bowler?.name || 'Bowler'} dismisses ${outPlayerName} (${wicketType || 'Out'})`,
           message: `${ballEvent.commentary} · ${scoreStr}`,
           timestamp: action.timestamp,
           matchId,

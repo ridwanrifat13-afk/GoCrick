@@ -31,6 +31,7 @@ import { LiveScoreboard } from './components/LiveScoreboard';
 import { MatchesAndSummaryView } from './components/MatchesAndSummaryView';
 import { PlayerStatsDashboard } from './components/PlayerStatsDashboard';
 import { NotificationCenter } from './components/NotificationCenter';
+import { StadiumCelebrationOverlay } from './components/StadiumCelebrationOverlay';
 import { playTournamentSound } from './utils/soundEffects';
 import {
   auth,
@@ -926,6 +927,12 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Broadcast Visual Effects Overlay (Group Shuffle, SIX, FOUR, WICKET) */}
+      <StadiumCelebrationOverlay
+        event={activeToast}
+        onDismiss={() => setActiveToast(null)}
+      />
 
       {/* Notification Toast & Feed Drawer */}
       <NotificationCenter
