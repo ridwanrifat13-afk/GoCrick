@@ -23,16 +23,24 @@ export function calculateRunRate(runs: number, legalBalls: number): string {
 
 function pushNotification(
   notifications: TournamentNotification[],
-  notif: Omit<TournamentNotification, 'id'>
+  notif: Omit<TournamentNotification, 'id'>,
+  deterministicKey: string
 ): TournamentNotification[] {
+  const id = `notif-${deterministicKey}`;
+  const filtered = notifications.filter((n) => n.id !== id);
   const newNotif: TournamentNotification = {
     ...notif,
-    id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id,
   };
-  return [newNotif, ...notifications].slice(0, 40);
+  return [newNotif, ...filtered].slice(0, 40);
 }
 
-function finalizeMatchIfCompleted(match: Match, state: TournamentState): {
+function finalizeMatchIfCompleted(
+  match: Match,
+  state: TournamentState,
+  actionId: string,
+  actionTimestamp: string
+): {
   updatedMatch: Match;
   notifications: TournamentNotification[];
 } {
@@ -54,13 +62,17 @@ function finalizeMatchIfCompleted(match: Match, state: TournamentState): {
       m.winnerTeamId = inn2.battingTeamId;
       const wicketsRemaining = Math.max(1, 7 - inn2.wickets);
       m.resultSummary = `${teamBat?.name || 'Team'} won by ${wicketsRemaining} wicket${wicketsRemaining > 1 ? 's' : ''}`;
-      notifications = pushNotification(notifications, {
-        type: 'MATCH_RESULT',
-        title: `Match Completed · ${m.title}`,
-        message: m.resultSummary,
-        timestamp: new Date().toISOString(),
-        matchId: m.id,
-      });
+      notifications = pushNotification(
+        notifications,
+        {
+          type: 'MATCH_RESULT',
+          title: `Match Completed · ${m.title}`,
+          message: m.resultSummary,
+          timestamp: actionTimestamp,
+          matchId: m.id,
+        },
+        `${actionId}-match-result`
+      );
     } else if (inn2.legalBalls >= maxBalls || inn2.wickets >= 7) {
       inn2.completed = true;
       m.innings2 = inn2;
@@ -73,13 +85,17 @@ function finalizeMatchIfCompleted(match: Match, state: TournamentState): {
         const margin = m.innings1.runs - inn2.runs;
         m.resultSummary = `${teamBowl?.name || 'Team'} won by ${margin} run${margin > 1 ? 's' : ''}`;
       }
-      notifications = pushNotification(notifications, {
-        type: 'MATCH_RESULT',
-        title: `Match Completed · ${m.title}`,
-        message: m.resultSummary,
-        timestamp: new Date().toISOString(),
-        matchId: m.id,
-      });
+      notifications = pushNotification(
+        notifications,
+        {
+          type: 'MATCH_RESULT',
+          title: `Match Completed · ${m.title}`,
+          message: m.resultSummary,
+          timestamp: actionTimestamp,
+          matchId: m.id,
+        },
+        `${actionId}-match-result`
+      );
     }
   } else if (m.currentInnings === 1) {
     const inn1 = { ...m.innings1 };
@@ -279,19 +295,27 @@ export function applyTournamentAction(
             const pObj = updatedPlayers.find((p) => p.id === groupState.assignments[tId]);
             return `${tObj?.name || tId}: ${pObj?.name || 'Player'}`;
           });
-          notifications = pushNotification(notifications, {
-            type: 'DRAFT',
-            title: `Group ${group} Shuffle Complete!`,
-            message: summaryParts.join(' · '),
-            timestamp: action.timestamp,
-          });
+          notifications = pushNotification(
+            notifications,
+            {
+              type: 'DRAFT',
+              title: `Group ${group} Shuffle Complete!`,
+              message: summaryParts.join(' · '),
+              timestamp: action.timestamp,
+            },
+            `${action.actionId}-draft-${group}-${step}`
+          );
         } else {
-          notifications = pushNotification(notifications, {
-            type: 'DRAFT',
-            title: `Group ${group} Pick · ${revealedPlayer.name}`,
-            message: `${revealedPlayer.name} (${revealedPlayer.role}) drafted to ${revealedTeam.name}!`,
-            timestamp: action.timestamp,
-          });
+          notifications = pushNotification(
+            notifications,
+            {
+              type: 'DRAFT',
+              title: `Group ${group} Pick · ${revealedPlayer.name}`,
+              message: `${revealedPlayer.name} (${revealedPlayer.role}) drafted to ${revealedTeam.name}!`,
+              timestamp: action.timestamp,
+            },
+            `${action.actionId}-draft-${group}-${step}`
+          );
         }
       }
 
@@ -343,12 +367,16 @@ export function applyTournamentAction(
           const pObj = updatedPlayers.find((p) => p.id === groupState.assignments[tId]);
           return `${tObj?.name || tId}: ${pObj?.name || 'Player'}`;
         });
-        notifications = pushNotification(notifications, {
-          type: 'DRAFT',
-          title: `Group ${group} Shuffle Complete!`,
-          message: summaryParts.join(' · '),
-          timestamp: action.timestamp,
-        });
+        notifications = pushNotification(
+          notifications,
+          {
+            type: 'DRAFT',
+            title: `Group ${group} Shuffle Complete!`,
+            message: summaryParts.join(' · '),
+            timestamp: action.timestamp,
+          },
+          `${action.actionId}-draft-complete-${group}`
+        );
       }
 
       return {
@@ -407,12 +435,16 @@ export function applyTournamentAction(
           assignments: {},
         };
       }
-      const notifications = pushNotification(nextState.notifications, {
-        type: 'INFO',
-        title: 'Draft Reset by Organizer',
-        message: 'All 7 groups (A–G) have been reset to pending for a fresh live shuffle.',
-        timestamp: action.timestamp,
-      });
+      const notifications = pushNotification(
+        nextState.notifications,
+        {
+          type: 'INFO',
+          title: 'Draft Reset by Organizer',
+          message: 'All 7 groups (A–G) have been reset to pending for a fresh live shuffle.',
+          timestamp: action.timestamp,
+        },
+        `${action.actionId}-draft-reset`
+      );
       return {
         ...nextState,
         players: updatedPlayers,
@@ -650,21 +682,29 @@ export function applyTournamentAction(
         .reduce((acc, b) => acc + b.runsOffBat, 0);
       const newBatterRuns = prevBatterRuns + runsOffBat;
       if (prevBatterRuns < 30 && newBatterRuns >= 30 && prevBatterRuns < 50) {
-        notifications = pushNotification(notifications, {
-          type: 'MILESTONE',
-          title: `30+ Milestone · ${striker?.name || 'Batter'} (${newBatterRuns}*)`,
-          message: `Crucial knock underway for ${batTeam?.name || 'their team'}!`,
-          timestamp: action.timestamp,
-          matchId,
-        });
+        notifications = pushNotification(
+          notifications,
+          {
+            type: 'MILESTONE',
+            title: `30+ Milestone · ${striker?.name || 'Batter'} (${newBatterRuns}*)`,
+            message: `Crucial knock underway for ${batTeam?.name || 'their team'}!`,
+            timestamp: action.timestamp,
+            matchId,
+          },
+          `${action.actionId}-milestone-30`
+        );
       } else if (prevBatterRuns < 50 && newBatterRuns >= 50) {
-        notifications = pushNotification(notifications, {
-          type: 'MILESTONE',
-          title: `HALF-CENTURY! ${striker?.name || 'Batter'} reaches ${newBatterRuns}*`,
-          message: `Sensational 50 in SGHS-23 Season 2! ${scoreStr}`,
-          timestamp: action.timestamp,
-          matchId,
-        });
+        notifications = pushNotification(
+          notifications,
+          {
+            type: 'MILESTONE',
+            title: `HALF-CENTURY! ${striker?.name || 'Batter'} reaches ${newBatterRuns}*`,
+            message: `Sensational 50 in SGHS-23 Season 2! ${scoreStr}`,
+            timestamp: action.timestamp,
+            matchId,
+          },
+          `${action.actionId}-milestone-50`
+        );
       }
 
       const draftMatch: Match = {
@@ -675,7 +715,9 @@ export function applyTournamentAction(
 
       const { updatedMatch, notifications: afterMatchNotifications } = finalizeMatchIfCompleted(
         draftMatch,
-        { ...nextState, notifications }
+        { ...nextState, notifications },
+        action.actionId,
+        action.timestamp
       );
 
       let finalNotifications = afterMatchNotifications;
@@ -686,29 +728,41 @@ export function applyTournamentAction(
           nextState.players.find((p) => p.id === (dismissedPlayerId || inn.strikerId))?.name ||
           striker?.name ||
           'Batter';
-        finalNotifications = pushNotification(finalNotifications, {
-          type: 'WICKET',
-          title: `WICKET! ${bowler?.name || 'Bowler'} dismisses ${outPlayerName} (${wicketType || 'Out'})`,
-          message: `${ballEvent.commentary} · ${scoreStr}`,
-          timestamp: action.timestamp,
-          matchId,
-        });
+        finalNotifications = pushNotification(
+          finalNotifications,
+          {
+            type: 'WICKET',
+            title: `WICKET! ${bowler?.name || 'Bowler'} dismisses ${outPlayerName} (${wicketType || 'Out'})`,
+            message: `${ballEvent.commentary} · ${scoreStr}`,
+            timestamp: action.timestamp,
+            matchId,
+          },
+          `${action.actionId}-wicket`
+        );
       } else if (runsOffBat === 6 || (extraType !== 'NONE' && totalRuns >= 6)) {
-        finalNotifications = pushNotification(finalNotifications, {
-          type: 'SIX',
-          title: `SIX! ${striker?.name || 'Batter'} launches a maximum!`,
-          message: `${ballEvent.commentary} · ${scoreStr}`,
-          timestamp: action.timestamp,
-          matchId,
-        });
+        finalNotifications = pushNotification(
+          finalNotifications,
+          {
+            type: 'SIX',
+            title: `SIX! ${striker?.name || 'Batter'} launches a maximum!`,
+            message: `${ballEvent.commentary} · ${scoreStr}`,
+            timestamp: action.timestamp,
+            matchId,
+          },
+          `${action.actionId}-six`
+        );
       } else if (runsOffBat === 4 || (extraType !== 'NONE' && totalRuns === 4)) {
-        finalNotifications = pushNotification(finalNotifications, {
-          type: 'FOUR',
-          title: `FOUR! Boundary by ${striker?.name || 'Batter'}`,
-          message: `${ballEvent.commentary} · ${scoreStr}`,
-          timestamp: action.timestamp,
-          matchId,
-        });
+        finalNotifications = pushNotification(
+          finalNotifications,
+          {
+            type: 'FOUR',
+            title: `FOUR! Boundary by ${striker?.name || 'Batter'}`,
+            message: `${ballEvent.commentary} · ${scoreStr}`,
+            timestamp: action.timestamp,
+            matchId,
+          },
+          `${action.actionId}-four`
+        );
       }
 
       return {
@@ -832,13 +886,17 @@ export function applyTournamentAction(
         resultSummary = 'Match Tied!';
       }
 
-      const notifications = pushNotification(nextState.notifications, {
-        type: 'MATCH_RESULT',
-        title: `Official Result · ${targetMatch.title}`,
-        message: resultSummary,
-        timestamp: action.timestamp,
-        matchId,
-      });
+      const notifications = pushNotification(
+        nextState.notifications,
+        {
+          type: 'MATCH_RESULT',
+          title: `Official Result · ${targetMatch.title}`,
+          message: resultSummary,
+          timestamp: action.timestamp,
+          matchId,
+        },
+        `${action.actionId}-complete-match`
+      );
 
       return {
         ...nextState,

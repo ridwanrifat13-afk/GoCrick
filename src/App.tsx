@@ -58,6 +58,10 @@ const ORGANIZER_SECRET_HASH = '10590';
 
 type ActiveTab = 'DRAFT' | 'SCOREBOARD' | 'MATCHES' | 'STATS';
 
+function getNotificationSignature(n: TournamentNotification): string {
+  return `${n.type}|${n.title}|${n.message}`;
+}
+
 /**
  * Compresses an uploaded image file to a lightweight <=256x256 Data URL (~15-35KB)
  * so it easily fits inside Firestore's 1MB document limit and syncs instantaneously.
@@ -162,8 +166,10 @@ export default function App() {
 
   const wsRef = useRef<WebSocket | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
-  const lastTopNotificationIdRef = useRef<string | null>(
-    state.notifications[0]?.id || null
+  const seenNotificationKeysRef = useRef<Set<string>>(
+    new Set(
+      state.notifications.flatMap((n) => [n.id, getNotificationSignature(n)])
+    )
   );
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const soundEnabledRef = useRef<boolean>(soundEnabled);
@@ -178,8 +184,16 @@ export default function App() {
   const simulatedOfflineRef = useRef<boolean>(simulatedOfflineMode);
   simulatedOfflineRef.current = simulatedOfflineMode;
 
+  const markNotificationsSeen = useCallback((list: TournamentNotification[]) => {
+    for (const n of list) {
+      seenNotificationKeysRef.current.add(n.id);
+      seenNotificationKeysRef.current.add(getNotificationSignature(n));
+    }
+  }, []);
+
   const triggerToast = useCallback((notification: TournamentNotification) => {
-    lastTopNotificationIdRef.current = notification.id;
+    seenNotificationKeysRef.current.add(notification.id);
+    seenNotificationKeysRef.current.add(getNotificationSignature(notification));
     setActiveToast(notification);
     playTournamentSound(notification.type, soundEnabledRef.current);
     if (toastTimerRef.current) {
@@ -271,10 +285,30 @@ export default function App() {
 
   useEffect(() => {
     const latest = state.notifications[0];
-    if (latest && latest.id !== lastTopNotificationIdRef.current) {
-      triggerToast(latest);
+    if (!latest) return;
+
+    const sig = getNotificationSignature(latest);
+    const alreadySeen =
+      seenNotificationKeysRef.current.has(latest.id) ||
+      seenNotificationKeysRef.current.has(sig);
+
+    // Mark all older notifications in the list as seen so they can never resurface
+    if (state.notifications.length > 1) {
+      markNotificationsSeen(state.notifications.slice(1));
     }
-  }, [state.notifications, triggerToast]);
+
+    if (!alreadySeen) {
+      const notifTime = new Date(latest.timestamp).getTime();
+      const isRecent =
+        !Number.isNaN(notifTime) && Math.abs(Date.now() - notifTime) < 10000;
+      if (isRecent) {
+        triggerToast(latest);
+      } else {
+        seenNotificationKeysRef.current.add(latest.id);
+        seenNotificationKeysRef.current.add(sig);
+      }
+    }
+  }, [state.notifications, triggerToast, markNotificationsSeen]);
 
   useEffect(() => {
     return () => {
@@ -443,13 +477,21 @@ export default function App() {
         payload: payload as never,
       };
 
-      const prevTopId = stateRef.current.notifications[0]?.id;
+      const prevTop = stateRef.current.notifications[0];
+      // Ensure all existing notifications before this action are marked seen
+      markNotificationsSeen(stateRef.current.notifications);
+
       const nextState = applyTournamentAction(stateRef.current, action);
       stateRef.current = nextState;
       setState(nextState);
 
       const nextTop = nextState.notifications[0];
-      if (nextTop && nextTop.id !== prevTopId) {
+      if (
+        nextTop &&
+        nextTop.id !== prevTop?.id &&
+        !seenNotificationKeysRef.current.has(nextTop.id) &&
+        !seenNotificationKeysRef.current.has(getNotificationSignature(nextTop))
+      ) {
         triggerToast(nextTop);
       }
 
@@ -473,7 +515,7 @@ export default function App() {
         setPendingActions((prev) => [...prev, action]);
       }
     },
-    [isOnline, triggerToast]
+    [isOnline, triggerToast, markNotificationsSeen]
   );
 
   const handleTriggerDramaticGroupShuffle = useCallback(
